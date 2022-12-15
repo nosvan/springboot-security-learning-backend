@@ -15,6 +15,12 @@ public class User {
     @NonNull
     private String name;
 
+    @Transient
+    private String firstName;
+
+    @Transient
+    private String lastName;
+
     @NonNull
     private String email;
 
@@ -49,6 +55,29 @@ public class User {
     @NonNull
     public String getName() {
         return name;
+    }
+
+    @NonNull
+    public String getUsername() {
+        return name;
+    }
+
+    public void setFirstName(){
+        this.firstName = name.split(" ")[0];
+    }
+
+    public String getFirstName(){
+        if(firstName == null) setFirstName();
+        return firstName;
+    }
+
+    public void setLastName(){
+        this.lastName = name.split(" ")[1];
+    }
+
+    public String getLastName(){
+        if(lastName == null) setLastName();
+        return lastName;
     }
 
     public void setEmail(@NonNull String email) {

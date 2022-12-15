@@ -1,5 +1,7 @@
 package com.sbsl.springbootsecuritylearning.controller;
 import com.sbsl.springbootsecuritylearning.dto.UserDto;
+import com.sbsl.springbootsecuritylearning.dto.UserLoginDto;
+import com.sbsl.springbootsecuritylearning.dto.UserRegisterDto;
 import com.sbsl.springbootsecuritylearning.entity.User;
 import com.sbsl.springbootsecuritylearning.jwt.JwtResponse;
 import com.sbsl.springbootsecuritylearning.jwt.JwtUtil;
@@ -31,31 +33,44 @@ public class AuthController {
 
     // handler method to handle user registration form submit request
     @PostMapping("/login")
-    public ResponseEntity login(@RequestBody UserDto userDto){
-        log.info("/login " + userDto.getEmail());
-        User existingUser = userServiceImpl.findUserByEmail(userDto.getEmail());
+    public ResponseEntity login(@RequestBody UserLoginDto userLoginDto){
+        log.info("/login " + userLoginDto.getEmail());
+        User existingUser = userServiceImpl.findUserByEmail(userLoginDto.getEmail());
 
         if(existingUser == null) return new ResponseEntity(HttpStatus.NOT_FOUND);
-        boolean matched = passwordEncoder.matches(userDto.getPassword(), existingUser.getPassword());
+        boolean matched = passwordEncoder.matches(userLoginDto.getPassword(), existingUser.getPassword());
         if(!matched) return new ResponseEntity(HttpStatus.NOT_FOUND);
         String token = jwtUtil.generateJwtToken(existingUser);
+        return new ResponseEntity<>(createJwtResponse(existingUser, token),HttpStatus.OK);
+    }
+
+    private JwtResponse createJwtResponse(User user, String token){
         JwtResponse jwtResponse = new JwtResponse();
-        jwtResponse.setId(existingUser.getId());
-        jwtResponse.setEmail(existingUser.getEmail());
+        jwtResponse.setId(user.getId());
+        jwtResponse.setEmail(user.getEmail());
         jwtResponse.setToken(token);
-        jwtResponse.setRoles(existingUser.getRolesString());
-        return new ResponseEntity<>(jwtResponse,HttpStatus.OK);
+        jwtResponse.setRoles(user.getRolesString());
+        return jwtResponse;
     }
 
     @PostMapping("/register")
-    public ResponseEntity registration(@RequestBody UserDto userDto){
-        User existingUser = userServiceImpl.findUserByEmail(userDto.getEmail());
-
+    public ResponseEntity<UserDto> registration(@RequestBody UserRegisterDto userRegisterDto){
+        User existingUser = userServiceImpl.findUserByEmail(userRegisterDto.getEmail());
         if(existingUser == null){
-            userServiceImpl.saveUser(userDto);
-            return new ResponseEntity(HttpStatus.OK);
+            userServiceImpl.saveUser(userRegisterDto);
+            User fetchedUser = userServiceImpl.findUserByEmail(userRegisterDto.getEmail());
+            return new ResponseEntity(UserToUserDto(fetchedUser),HttpStatus.OK);
         }
-        return new ResponseEntity(HttpStatus.CONFLICT);
+        return new ResponseEntity(UserToUserDto(existingUser),HttpStatus.CONFLICT);
+    }
+
+    private UserDto UserToUserDto(User user){
+        UserDto fetchedUserDto = new UserDto();
+        fetchedUserDto.setFirstName(user.getFirstName());
+        fetchedUserDto.setLastName(user.getLastName());
+        fetchedUserDto.setEmail(user.getEmail());
+        fetchedUserDto.setId(user.getId());
+        return fetchedUserDto;
     }
 
     // handler method to handle list of users

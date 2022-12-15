@@ -1,6 +1,7 @@
 package com.sbsl.springbootsecuritylearning.service;
 
 import com.sbsl.springbootsecuritylearning.dto.UserDto;
+import com.sbsl.springbootsecuritylearning.dto.UserRegisterDto;
 import com.sbsl.springbootsecuritylearning.entity.Role;
 import com.sbsl.springbootsecuritylearning.entity.User;
 import com.sbsl.springbootsecuritylearning.repository.RoleRepository;
@@ -27,12 +28,12 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public void saveUser(UserDto userDto) {
+    public void saveUser(UserRegisterDto userRegisterDto) {
         User user = new User();
-        user.setName(userDto.getFirstName() + " " + userDto.getLastName());
-        user.setEmail(userDto.getEmail());
+        user.setName(userRegisterDto.getFirstName() + " " + userRegisterDto.getLastName());
+        user.setEmail(userRegisterDto.getEmail());
         // encrypt the password using spring security
-        user.setPassword(passwordEncoder.encode(userDto.getPassword()));
+        user.setPassword(passwordEncoder.encode(userRegisterDto.getPassword()));
 
         Role role = roleRepository.findByName("ROLE_ADMIN");
         if (role == null) {

@@ -1,10 +1,20 @@
 package com.sbsl.springbootsecuritylearning.dto;
 
+import lombok.NoArgsConstructor;
+
+@NoArgsConstructor
 public class UserDto {
     private Long id;
     private String firstName;
     private String lastName;
     private String email;
+
+    public UserDto(Long id, String firstName, String lastName, String email) {
+        this.id = id;
+        this.firstName = firstName;
+        this.lastName = lastName;
+        this.email = email;
+    }
 
     public void setId(Long id){
         this.id = id;

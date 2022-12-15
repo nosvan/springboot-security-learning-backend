@@ -2,26 +2,27 @@ package com.sbsl.springbootsecuritylearning.jwt;
 
 import com.sbsl.springbootsecuritylearning.entity.User;
 import io.jsonwebtoken.*;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
-import java.util.Date;
+import java.util.*;
 
 @Component
 @Log4j2
-public class JwtUtil {
+public class JwtUtilities {
     @Value("${jwt.secret}")
     private String jwtSecret;
 
-    public String generateJwtToken(User user) {
+    public String generateJwtToken(User user){
         int jwtExpirationMs = 60 * 60;
-        return Jwts.builder().setSubject((user.getEmail())).setIssuedAt(new Date())
+        return Jwts.builder().setSubject(user.getId().toString()).setIssuedAt(new Date())
                 .setExpiration(new Date((new Date()).getTime() + jwtExpirationMs)).signWith(SignatureAlgorithm.HS512, jwtSecret)
                 .compact();
     }
 
-    public String getUserNameFromJwtToken(String token) {
+    public String getIdFromJwtToken(String token) {
         return Jwts.parser().setSigningKey(jwtSecret).parseClaimsJws(token).getBody().getSubject();
     }
 
@@ -41,5 +42,14 @@ public class JwtUtil {
             log.error("JWT claims string is empty: {}", e.getMessage());
         }
         return false;
+    }
+
+    public String parseForToken(HttpServletRequest request){
+        String setCookie = request.getHeader("Set-Cookie");
+        if(setCookie == null) return null;
+        String[] cookieArray = setCookie.split("; ");
+        Optional<String> tokenWithJwtName = Arrays.stream(cookieArray).filter(e -> e.contains("user-jwt-cookie")).findFirst();
+        if(tokenWithJwtName.isEmpty()) return null;
+        return tokenWithJwtName.toString().split("=")[1];
     }
 }

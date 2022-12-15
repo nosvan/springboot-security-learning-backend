@@ -1,6 +1,6 @@
 package com.sbsl.springbootsecuritylearning.jwt;
 
-import com.sbsl.springbootsecuritylearning.entity.Role;
+import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
@@ -8,10 +8,12 @@ import java.util.List;
 
 @Data
 @NoArgsConstructor
+@AllArgsConstructor
 public class JwtResponse {
-    private String token;
-    private String type = "Bearer";
     private Long id;
     private String email;
     private List<String> roles;
+    private String type;
+    private String token;
+
 }

@@ -4,10 +4,12 @@ import com.sbsl.springbootsecuritylearning.dto.UserLoginDto;
 import com.sbsl.springbootsecuritylearning.dto.UserRegisterDto;
 import com.sbsl.springbootsecuritylearning.entity.User;
 import com.sbsl.springbootsecuritylearning.jwt.JwtResponse;
-import com.sbsl.springbootsecuritylearning.jwt.JwtUtil;
+import com.sbsl.springbootsecuritylearning.jwt.JwtUtilities;
 import com.sbsl.springbootsecuritylearning.service.UserServiceImpl;
 import lombok.extern.log4j.Log4j2;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Controller;
@@ -23,12 +25,12 @@ public class AuthController {
 
     private final UserServiceImpl userServiceImpl;
     private final PasswordEncoder passwordEncoder;
-    private final JwtUtil jwtUtil;
+    private final JwtUtilities jwtUtilities;
 
-    public AuthController(UserServiceImpl userServiceImpl, PasswordEncoder passwordEncoder, JwtUtil jwtUtil) {
+    public AuthController(UserServiceImpl userServiceImpl, PasswordEncoder passwordEncoder, JwtUtilities jwtUtilities) {
         this.userServiceImpl = userServiceImpl;
         this.passwordEncoder = passwordEncoder;
-        this.jwtUtil = jwtUtil;
+        this.jwtUtilities = jwtUtilities;
     }
 
     // handler method to handle user registration form submit request
@@ -40,17 +42,18 @@ public class AuthController {
         if(existingUser == null) return new ResponseEntity(HttpStatus.NOT_FOUND);
         boolean matched = passwordEncoder.matches(userLoginDto.getPassword(), existingUser.getPassword());
         if(!matched) return new ResponseEntity(HttpStatus.NOT_FOUND);
-        String token = jwtUtil.generateJwtToken(existingUser);
-        return new ResponseEntity<>(createJwtResponse(existingUser, token),HttpStatus.OK);
+        ResponseCookie springCookie = ResponseCookie.from("user-jwt-cookie", jwtUtilities.generateJwtToken(existingUser))
+                .httpOnly(true)
+                .secure(true)
+                .path("/")
+                .maxAge(60*60)
+                .domain("localhost")
+                .build();
+        return ResponseEntity.ok().header(HttpHeaders.SET_COOKIE, springCookie.toString()).build();
     }
 
     private JwtResponse createJwtResponse(User user, String token){
-        JwtResponse jwtResponse = new JwtResponse();
-        jwtResponse.setId(user.getId());
-        jwtResponse.setEmail(user.getEmail());
-        jwtResponse.setToken(token);
-        jwtResponse.setRoles(user.getRolesString());
-        return jwtResponse;
+        return new JwtResponse(user.getId(), user.getEmail(), user.getRolesString(), "Bearer",token);
     }
 
     @PostMapping("/register")
@@ -65,12 +68,7 @@ public class AuthController {
     }
 
     private UserDto UserToUserDto(User user){
-        UserDto fetchedUserDto = new UserDto();
-        fetchedUserDto.setFirstName(user.getFirstName());
-        fetchedUserDto.setLastName(user.getLastName());
-        fetchedUserDto.setEmail(user.getEmail());
-        fetchedUserDto.setId(user.getId());
-        return fetchedUserDto;
+        return new UserDto(user.getId(), user.getFirstName(), user.getLastName(), user.getEmail());
     }
 
     // handler method to handle list of users

@@ -27,7 +27,6 @@ public class UserServiceImpl implements UserService {
         this.passwordEncoder = passwordEncoder;
     }
 
-    @Override
     public void saveUser(UserRegisterDto userRegisterDto) {
         User user = new User();
         user.setName(userRegisterDto.getFirstName() + " " + userRegisterDto.getLastName());
@@ -43,12 +42,14 @@ public class UserServiceImpl implements UserService {
         userRepository.save(user);
     }
 
-    @Override
     public User findUserByEmail(String email) {
         return userRepository.findByEmail(email);
     }
 
-    @Override
+    public Optional<User> findById(Long id){
+        return userRepository.findById(id);
+    }
+
     public List<UserDto> findAllUsers() {
         List<User> users = userRepository.findAll();
         return users.stream()

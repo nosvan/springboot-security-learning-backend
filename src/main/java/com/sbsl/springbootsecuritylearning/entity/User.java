@@ -38,6 +38,10 @@ public class User {
         this.password = password;
     }
 
+    public Long getId() {
+        return id;
+    }
+
     public void setName(@NonNull String name) {
         this.name = name;
     }
@@ -71,5 +75,13 @@ public class User {
 
     public void setRoles(List<Role> roles) {
         this.roles = roles;
+    }
+
+    public List<String> getRolesString() {
+        List<String> listOfRoles = new ArrayList<>();
+        for(Role r: roles){
+            listOfRoles.add(r.getName());
+        }
+        return listOfRoles;
     }
 }

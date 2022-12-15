@@ -1,6 +1,6 @@
 package com.sbsl.springbootsecuritylearning.jwt;
 
-import com.sbsl.springbootsecuritylearning.dto.UserDto;
+import com.sbsl.springbootsecuritylearning.entity.User;
 import io.jsonwebtoken.*;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Value;
@@ -13,10 +13,10 @@ import java.util.Date;
 public class JwtUtil {
     @Value("${jwt.secret}")
     private String jwtSecret;
-    private int jwtExpirationMs = 60*60;
 
-    public String generateJwtToken(UserDto userDto) {
-        return Jwts.builder().setSubject((userDto.getEmail())).setIssuedAt(new Date())
+    public String generateJwtToken(User user) {
+        int jwtExpirationMs = 60 * 60;
+        return Jwts.builder().setSubject((user.getEmail())).setIssuedAt(new Date())
                 .setExpiration(new Date((new Date()).getTime() + jwtExpirationMs)).signWith(SignatureAlgorithm.HS512, jwtSecret)
                 .compact();
     }

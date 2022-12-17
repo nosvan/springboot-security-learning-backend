@@ -3,14 +3,15 @@ import com.sbsl.springbootsecuritylearning.dto.UserDto;
 import com.sbsl.springbootsecuritylearning.dto.UserLoginDto;
 import com.sbsl.springbootsecuritylearning.dto.UserRegisterDto;
 import com.sbsl.springbootsecuritylearning.entity.User;
-import com.sbsl.springbootsecuritylearning.jwt.JwtResponse;
 import com.sbsl.springbootsecuritylearning.jwt.JwtUtilities;
+import com.sbsl.springbootsecuritylearning.repository.UserRepository;
 import com.sbsl.springbootsecuritylearning.service.UserServiceImpl;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.log4j.Log4j2;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseCookie;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.*;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -22,38 +23,30 @@ import java.util.List;
 @Log4j2
 @Controller
 public class AuthController {
-
     private final UserServiceImpl userServiceImpl;
-    private final PasswordEncoder passwordEncoder;
     private final JwtUtilities jwtUtilities;
+    private final AuthenticationManager authenticationManager;
 
-    public AuthController(UserServiceImpl userServiceImpl, PasswordEncoder passwordEncoder, JwtUtilities jwtUtilities) {
+    public AuthController(UserServiceImpl userServiceImpl, JwtUtilities jwtUtilities, AuthenticationManager authenticationManager) {
         this.userServiceImpl = userServiceImpl;
-        this.passwordEncoder = passwordEncoder;
         this.jwtUtilities = jwtUtilities;
+        this.authenticationManager = authenticationManager;
     }
 
     // handler method to handle user registration form submit request
     @PostMapping("/login")
-    public ResponseEntity login(@RequestBody UserLoginDto userLoginDto){
+    public ResponseEntity login(@RequestBody UserLoginDto userLoginDto, HttpServletResponse response){
         log.info("/login " + userLoginDto.getEmail());
-        User existingUser = userServiceImpl.findUserByEmail(userLoginDto.getEmail());
-
-        if(existingUser == null) return new ResponseEntity(HttpStatus.NOT_FOUND);
-        boolean matched = passwordEncoder.matches(userLoginDto.getPassword(), existingUser.getPassword());
-        if(!matched) return new ResponseEntity(HttpStatus.NOT_FOUND);
-        ResponseCookie springCookie = ResponseCookie.from("user-jwt-cookie", jwtUtilities.generateJwtToken(existingUser))
+        Authentication authentication = authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(userLoginDto.getEmail(), userLoginDto.getPassword()));
+        ResponseCookie springCookie = ResponseCookie.from("user-jwt-cookie", jwtUtilities.generateJwtToken(authentication))
                 .httpOnly(true)
                 .secure(true)
                 .path("/")
-                .maxAge(60*60)
+                .sameSite("Lax")
+                .maxAge(60*60*60)
                 .domain("localhost")
                 .build();
-        return ResponseEntity.ok().header(HttpHeaders.SET_COOKIE, springCookie.toString()).build();
-    }
-
-    private JwtResponse createJwtResponse(User user, String token){
-        return new JwtResponse(user.getId(), user.getEmail(), user.getRolesString(), "Bearer",token);
+        return ResponseEntity.ok().header(HttpHeaders.SET_COOKIE, springCookie.toString()).body("haha");
     }
 
     @PostMapping("/register")

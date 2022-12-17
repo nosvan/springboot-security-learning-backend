@@ -1,48 +1,41 @@
 package com.sbsl.springbootsecuritylearning.config;
 
-import com.sbsl.springbootsecuritylearning.security.JwtAuthorizationFilter;
+import com.sbsl.springbootsecuritylearning.service.UserDetailsServiceImpl;
+import lombok.extern.log4j.Log4j2;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.ProviderManager;
+import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
-import org.springframework.web.servlet.config.annotation.CorsRegistry;
-import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
+@Log4j2
 @Configuration
 @EnableWebSecurity
 public class SpringSecurity {
-    private JwtAuthorizationFilter jwtAuthorizationFilter;
-    SpringSecurity(JwtAuthorizationFilter jwtAuthorizationFilter){
-        this.jwtAuthorizationFilter = jwtAuthorizationFilter;
-    }
-
     @Bean
-    public static PasswordEncoder passwordEncoder(){
+    public BCryptPasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
-
-    // configure SecurityFilterChain
     @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-        http.cors().and().csrf().disable().authorizeHttpRequests()
-                .requestMatchers("/register/**").permitAll()
-                .requestMatchers("/login").permitAll()
-                .requestMatchers("/users").hasAnyRole("ADMIN", "USER");
-        http.addFilterBefore(jwtAuthorizationFilter, UsernamePasswordAuthenticationFilter.class);
-        return http.build();
+    public AuthenticationManager authManager(UserDetailsServiceImpl userDetailsServiceImpl) {
+        var authProvider = new DaoAuthenticationProvider();
+        authProvider.setUserDetailsService(userDetailsServiceImpl);
+        return new ProviderManager(authProvider);
     }
 
     @Bean
-    public WebMvcConfigurer corsConfigurer() {
-        return new WebMvcConfigurer() {
-            @Override
-            public void addCorsMappings(CorsRegistry registry) {
-                registry.addMapping("/**").allowedOrigins("http://localhost:3000");
-            }
-        };
+    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+        http.cors().and().csrf().disable().authorizeHttpRequests(auth -> auth
+                .requestMatchers("/register/**").permitAll()
+                .requestMatchers("/login").permitAll()
+                .anyRequest().authenticated()
+        ).sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
+        return http.build();
     }
 }

@@ -5,6 +5,7 @@ import io.jsonwebtoken.*;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Component;
 
 import java.util.*;
@@ -15,9 +16,10 @@ public class JwtUtilities {
     @Value("${jwt.secret}")
     private String jwtSecret;
 
-    public String generateJwtToken(User user){
-        int jwtExpirationMs = 60 * 60;
-        return Jwts.builder().setSubject(user.getId().toString()).setIssuedAt(new Date())
+    public String generateJwtToken(Authentication authentication){
+        int jwtExpirationMs = 60*60*60;
+        log.info(authentication.getName());
+        return Jwts.builder().setSubject(authentication.getName()).setIssuedAt(new Date())
                 .setExpiration(new Date((new Date()).getTime() + jwtExpirationMs)).signWith(SignatureAlgorithm.HS512, jwtSecret)
                 .compact();
     }
@@ -45,11 +47,9 @@ public class JwtUtilities {
     }
 
     public String parseForToken(HttpServletRequest request){
-        String setCookie = request.getHeader("Set-Cookie");
-        if(setCookie == null) return null;
-        String[] cookieArray = setCookie.split("; ");
-        Optional<String> tokenWithJwtName = Arrays.stream(cookieArray).filter(e -> e.contains("user-jwt-cookie")).findFirst();
-        if(tokenWithJwtName.isEmpty()) return null;
-        return tokenWithJwtName.toString().split("=")[1];
+        log.info(request.getHeader("Authorization"));
+        String bearerTokenPair = request.getHeader("Authorization");
+        if(bearerTokenPair == null) return null;
+        return bearerTokenPair.split(" ")[1];
     }
 }

@@ -21,23 +21,23 @@ import java.io.IOException;
 public class JwtRequestFilter extends OncePerRequestFilter {
     private final UserDetailsServiceImpl userDetailsServiceImpl;
     private final JwtUtilities jwtUtilities;
+    private final CookieUtilities cookieUtilities;
 
-    public JwtRequestFilter(UserDetailsServiceImpl userDetailsServiceImpl, JwtUtilities jwtUtilities) {
+    public JwtRequestFilter(UserDetailsServiceImpl userDetailsServiceImpl, JwtUtilities jwtUtilities, CookieUtilities cookieUtilities) {
         this.userDetailsServiceImpl = userDetailsServiceImpl;
         this.jwtUtilities = jwtUtilities;
+        this.cookieUtilities = cookieUtilities;
     }
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
             throws ServletException, IOException {
-        final String requestTokenHeader = request.getHeader("Authorization");
+        final String requestTokenHeader = cookieUtilities.parseCookieFromHeader(request, "user-jwt-cookie");
         String email = null;
-        String jwtToken = null;
         log.info(requestTokenHeader);
-        if (requestTokenHeader != null && requestTokenHeader.startsWith("Bearer ")) {
-            jwtToken = requestTokenHeader.substring(7);
+        if (requestTokenHeader != null) {
             try {
-                email = jwtUtilities.getUserFromToken(jwtToken);
+                email = jwtUtilities.getUserFromToken(requestTokenHeader);
             } catch (IllegalArgumentException e) {
                 System.out.println("Unable to get JWT Token");
             } catch (ExpiredJwtException e) {
@@ -48,7 +48,7 @@ public class JwtRequestFilter extends OncePerRequestFilter {
         }
 
         if (email != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-            if (jwtUtilities.validateJwtToken(jwtToken)) {
+            if (jwtUtilities.validateJwtToken(requestTokenHeader)) {
                 UserDetailsImpl userDetailsImpl = userDetailsServiceImpl.loadUserByUsername(email);
                 UsernamePasswordAuthenticationToken usernamePasswordAuthenticationToken = new UsernamePasswordAuthenticationToken(
                         userDetailsImpl, null, userDetailsImpl.getAuthorities());

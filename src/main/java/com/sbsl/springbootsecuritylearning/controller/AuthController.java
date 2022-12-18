@@ -1,4 +1,5 @@
 package com.sbsl.springbootsecuritylearning.controller;
+
 import com.sbsl.springbootsecuritylearning.dto.UserDto;
 import com.sbsl.springbootsecuritylearning.dto.UserLoginDto;
 import com.sbsl.springbootsecuritylearning.dto.UserRegisterDto;
@@ -35,38 +36,34 @@ public class AuthController {
 
     // handler method to handle user registration form submit request
     @PostMapping("/login")
-    public ResponseEntity login(@RequestBody UserLoginDto userLoginDto, HttpServletResponse response){
+    public ResponseEntity login(@RequestBody UserLoginDto userLoginDto, HttpServletResponse response) {
         log.info("/login " + userLoginDto.getEmail());
         Authentication authentication = authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(userLoginDto.getEmail(), userLoginDto.getPassword()));
         ResponseCookie springCookie = ResponseCookie.from("user-jwt-cookie", jwtUtilities.generateJwtToken(authentication))
                 .httpOnly(true)
-                .secure(true)
+                .secure(false)
                 .path("/")
                 .sameSite("Lax")
-                .maxAge(60*60*60)
+                .maxAge(60 * 60 * 24)
                 .domain("localhost")
                 .build();
         return ResponseEntity.ok().header(HttpHeaders.SET_COOKIE, springCookie.toString()).body("haha");
     }
 
     @PostMapping("/register")
-    public ResponseEntity<UserDto> registration(@RequestBody UserRegisterDto userRegisterDto){
+    public ResponseEntity<UserDto> registration(@RequestBody UserRegisterDto userRegisterDto) {
         User existingUser = userServiceImpl.findUserByEmail(userRegisterDto.getEmail());
-        if(existingUser == null){
+        if (existingUser == null) {
             userServiceImpl.saveUser(userRegisterDto);
             User fetchedUser = userServiceImpl.findUserByEmail(userRegisterDto.getEmail());
-            return new ResponseEntity(UserToUserDto(fetchedUser),HttpStatus.OK);
+            return new ResponseEntity(new UserDto(fetchedUser), HttpStatus.OK);
         }
-        return new ResponseEntity(UserToUserDto(existingUser),HttpStatus.CONFLICT);
-    }
-
-    private UserDto UserToUserDto(User user){
-        return new UserDto(user.getId(), user.getFirstName(), user.getLastName(), user.getEmail());
+        return new ResponseEntity(new UserDto(existingUser), HttpStatus.CONFLICT);
     }
 
     // handler method to handle list of users
     @GetMapping("/users")
-    public ResponseEntity users(){
+    public ResponseEntity users() {
         log.info("/users");
         List<UserDto> users = userServiceImpl.findAllUsers();
         return new ResponseEntity<>(users, HttpStatus.OK);

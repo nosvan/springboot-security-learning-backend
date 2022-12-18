@@ -1,5 +1,6 @@
 package com.sbsl.springbootsecuritylearning.dto;
 
+import com.sbsl.springbootsecuritylearning.entity.User;
 import lombok.NoArgsConstructor;
 
 @NoArgsConstructor
@@ -16,11 +17,20 @@ public class UserDto {
         this.email = email;
     }
 
-    public void setId(Long id){
+    public UserDto(User user) {
+        this.id = user.getId();
+        this.firstName = user.getFirstName();
+        this.lastName = user.getLastName();
+        this.email = user.getEmail();
+    }
+
+    public void setId(Long id) {
         this.id = id;
     }
 
-    public Long getId(){ return id;}
+    public Long getId() {
+        return id;
+    }
 
     public String getFirstName() {
         return firstName;

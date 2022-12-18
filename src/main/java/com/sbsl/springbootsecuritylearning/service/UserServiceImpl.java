@@ -11,10 +11,7 @@ import org.springframework.security.crypto.password.DelegatingPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -54,12 +51,13 @@ public class UserServiceImpl implements UserService {
         return userRepository.findByEmail(email);
     }
 
-    public Optional<User> findById(Long id){
+    public Optional<User> findById(Long id) {
         return userRepository.findById(id);
     }
 
     public List<UserDto> findAllUsers() {
         List<User> users = userRepository.findAll();
+        users.sort((o1, o2) -> (int) (o1.getId() - o2.getId()));
         return users.stream()
                 .map(this::mapToUserDto)
                 .collect(Collectors.toList());
@@ -68,6 +66,7 @@ public class UserServiceImpl implements UserService {
     private UserDto mapToUserDto(User user) {
         UserDto userDto = new UserDto();
         String[] str = user.getName().split(" ");
+        userDto.setId(user.getId());
         userDto.setFirstName(str[0]);
         userDto.setLastName(str[1]);
         userDto.setEmail(user.getEmail());

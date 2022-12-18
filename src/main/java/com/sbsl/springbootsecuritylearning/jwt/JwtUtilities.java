@@ -1,6 +1,5 @@
 package com.sbsl.springbootsecuritylearning.jwt;
 
-import com.sbsl.springbootsecuritylearning.entity.User;
 import io.jsonwebtoken.*;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.log4j.Log4j2;
@@ -16,15 +15,15 @@ public class JwtUtilities {
     @Value("${jwt.secret}")
     private String jwtSecret;
 
-    public String generateJwtToken(Authentication authentication){
-        int jwtExpirationMs = 60*60*60;
-        log.info(authentication.getName());
+    public String generateJwtToken(Authentication authentication) {
+        Date expirationDate = new Date(new Date().getTime() + 1000 * 60 * 60 * 24);
+        log.info(expirationDate.toString());
         return Jwts.builder().setSubject(authentication.getName()).setIssuedAt(new Date())
-                .setExpiration(new Date((new Date()).getTime() + jwtExpirationMs)).signWith(SignatureAlgorithm.HS512, jwtSecret)
+                .setExpiration(expirationDate).signWith(SignatureAlgorithm.HS512, jwtSecret)
                 .compact();
     }
 
-    public String getIdFromJwtToken(String token) {
+    public String getUserFromToken(String token) {
         return Jwts.parser().setSigningKey(jwtSecret).parseClaimsJws(token).getBody().getSubject();
     }
 
@@ -44,12 +43,5 @@ public class JwtUtilities {
             log.error("JWT claims string is empty: {}", e.getMessage());
         }
         return false;
-    }
-
-    public String parseForToken(HttpServletRequest request){
-        log.info(request.getHeader("Authorization"));
-        String bearerTokenPair = request.getHeader("Authorization");
-        if(bearerTokenPair == null) return null;
-        return bearerTokenPair.split(" ")[1];
     }
 }

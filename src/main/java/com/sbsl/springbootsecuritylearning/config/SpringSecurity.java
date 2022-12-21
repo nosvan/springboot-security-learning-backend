@@ -3,6 +3,7 @@ package com.sbsl.springbootsecuritylearning.config;
 import com.sbsl.springbootsecuritylearning.jwt.JwtRequestFilter;
 import com.sbsl.springbootsecuritylearning.service.UserDetailsServiceImpl;
 import io.jsonwebtoken.Jwts;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -38,11 +39,6 @@ public class SpringSecurity {
         var authProvider = new DaoAuthenticationProvider();
         authProvider.setUserDetailsService(userDetailsServiceImpl);
         return new ProviderManager(authProvider);
-    }
-
-    @Bean
-    Jwts jwtDecoder() {
-        return null;
     }
 
     @Bean

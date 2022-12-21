@@ -4,20 +4,21 @@ import com.sbsl.springbootsecuritylearning.dto.UserDto;
 import com.sbsl.springbootsecuritylearning.dto.UserLoginDto;
 import com.sbsl.springbootsecuritylearning.dto.UserRegisterDto;
 import com.sbsl.springbootsecuritylearning.entity.User;
+import com.sbsl.springbootsecuritylearning.jwt.CookieUtilities;
 import com.sbsl.springbootsecuritylearning.jwt.JwtUtilities;
-import com.sbsl.springbootsecuritylearning.repository.UserRepository;
 import com.sbsl.springbootsecuritylearning.service.UserServiceImpl;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.http.*;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
 
 import java.util.List;
 
@@ -25,12 +26,12 @@ import java.util.List;
 @Controller
 public class AuthController {
     private final UserServiceImpl userServiceImpl;
-    private final JwtUtilities jwtUtilities;
+    private final CookieUtilities cookieUtilities;
     private final AuthenticationManager authenticationManager;
 
-    public AuthController(UserServiceImpl userServiceImpl, JwtUtilities jwtUtilities, AuthenticationManager authenticationManager) {
+    public AuthController(UserServiceImpl userServiceImpl, CookieUtilities cookieUtilities, AuthenticationManager authenticationManager) {
         this.userServiceImpl = userServiceImpl;
-        this.jwtUtilities = jwtUtilities;
+        this.cookieUtilities = cookieUtilities;
         this.authenticationManager = authenticationManager;
     }
 
@@ -39,15 +40,19 @@ public class AuthController {
     public ResponseEntity login(@RequestBody UserLoginDto userLoginDto, HttpServletResponse response) {
         log.info("/login " + userLoginDto.getEmail());
         Authentication authentication = authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(userLoginDto.getEmail(), userLoginDto.getPassword()));
-        ResponseCookie springCookie = ResponseCookie.from("user-jwt-cookie", jwtUtilities.generateJwtToken(authentication))
-                .httpOnly(true)
-                .secure(false)
-                .path("/")
-                .sameSite("Lax")
-                .maxAge(60 * 60 * 24)
-                .domain("localhost")
+        return ResponseEntity
+                .ok()
+                .header(HttpHeaders.SET_COOKIE, cookieUtilities.createResponseCookie("user-jwt-cookie", authentication).toString())
                 .build();
-        return ResponseEntity.ok().header(HttpHeaders.SET_COOKIE, springCookie.toString()).body("haha");
+    }
+
+    @PostMapping("/user/logout")
+    public ResponseEntity logout(HttpServletRequest request, HttpServletResponse response) {
+        log.info("/user/logout");
+        return ResponseEntity
+                .ok()
+                .header(HttpHeaders.SET_COOKIE, cookieUtilities.removeCookieFromResponse("user-jwt-cookie").toString())
+                .build();
     }
 
     @PostMapping("/register")
